@@ -66,7 +66,7 @@ chrome.alarms.onAlarm.addListener(alarm => {if(alarm.name==='wish-daily') serial
 chrome.runtime.onMessage.addListener((message,sender,respond) => {
   if(sender.id!==chrome.runtime.id) return;
   serial(async()=>{
-    const bridgeSender=sender.url?.startsWith('http://localhost:8765/');
+    const bridgeSender=sender.url?.startsWith('http://localhost:8765/') || sender.url?.startsWith('https://worldjanezhao-hash.github.io/asuwish/');
     if(sender.tab && !bridgeSender) throw new Error('不受支持的网站来源');
     if(message.type==='readState') {
       return {data:await chrome.storage.local.get(['wish','entries','watchItems','observations','settings'])};

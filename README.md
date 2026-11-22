@@ -30,7 +30,7 @@
 
 ## GitHub Pages
 
-可托管 `wish-site/` 静态页面。部署前必须把扩展的网站匹配地址和后台来源检查配置为实际站点，并限制到本项目路径。目前桥接仅支持 localhost，直接上线不会自动连接扩展。
+可托管 `wish-site/` 静态页面。部署前必须把扩展的网站匹配地址和后台来源检查配置为实际站点，并限制到本项目路径。扩展 0.4.1 同时允许 localhost 与 https://worldjanezhao-hash.github.io/asuwish/ 。在仓库 Settings → Pages 中，选择 Deploy from a branch、main、/docs 并保存。实际可用性取决于 GitHub 套餐和 Pages 设置；尚未确认发布成功。
 
 ## 数据保护
 

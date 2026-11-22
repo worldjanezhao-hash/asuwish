@@ -1,4 +1,4 @@
-// Only the local website can use this bridge; the manifest fixes its origin.
+// Only configured website paths can use this bridge.
 const allowed=new Set(['readState','writeWish','writeEntries','runNow','addItem','removeItem','saveSettings']);
 window.addEventListener('message',async event=>{
   const m=event.data;
