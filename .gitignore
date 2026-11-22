@@ -1,0 +1,10 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+__pycache__/
+*.log
+wish-backup*.json
+wish-monitor*.json
+wish-price-observations*.json
