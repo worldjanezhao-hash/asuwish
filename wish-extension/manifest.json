@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "心愿价格记录",
+  "version": "0.4.0",
+  "description": "定时检查指定商品，记录价格变化并提醒。",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "monitor.html",
+  "host_permissions": [
+    "https://www.goofish.com/*",
+    "https://goofish.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:8765/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}
