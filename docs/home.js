@@ -35,10 +35,15 @@ async function render(){
 function prices(saved){
  const id=state.wish.itemId,rows=state.observations.filter(r=>r.itemId===id&&Number.isFinite(r.price)&&r.price>0).sort((a,b)=>a.observedAt.localeCompare(b.observedAt));
  $('chart').replaceChildren();$('product-link').hidden=true;
- if(!rows.length){$('price-summary').textContent='尚无该商品的价格记录。添加商品并完成一次检查后即可查看。';$('advice').textContent='';return;}
  const unavailable=state.watchItems.find(x=>x.itemId===id);
+ const isUnavailable=['removed','sold'].includes(unavailable?.availability);
+ if(isUnavailable){
+   $('price-summary').textContent=`${unavailable.availability==='sold'?'已售出':'已下架'} · 检查时间 ${new Date(unavailable.lastResult?.attemptedAt).toLocaleString()} · 价格历史仅供回顾`;
+   $('advice').textContent='请点击下方“更新同类商品链接”，更换同型号、相近成色的商品。攒钱记录保留。';
+ }else if(unavailable?.lastResult?.ok===false){$('price-summary').textContent='最近检查未成功：'+unavailable.lastResult.error;$('advice').textContent='请重新检查商品状态，旧价格不代表当前可购买。';return;}
+ if(!rows.length){if(!isUnavailable){$('price-summary').textContent='尚无该商品的价格记录。添加商品并完成一次检查后即可查看。';$('advice').textContent='';}return;}
  const latest=rows.at(-1),values=rows.map(r=>r.price),low=Math.min(...values),high=Math.max(...values);
- $('price-summary').textContent=`最近记录 ¥${latest.price} · ${new Date(latest.observedAt).toLocaleString()} · 共 ${rows.length} 次记录 · ${latest.confirmed===false?'自动读取待核对':'人工确认'}`;
+ if(!isUnavailable)$('price-summary').textContent=`最近记录 ¥${latest.price} · ${new Date(latest.observedAt).toLocaleString()} · 共 ${rows.length} 次记录 · ${latest.confirmed===false?'自动读取待核对':'人工确认'}`;
  const svgNS='http://www.w3.org/2000/svg';const points=values.map((v,i)=>[30+(values.length===1?.5:i/(values.length-1))*660,165-(v-low)/(high-low||1)*130]);
  const line=document.createElementNS(svgNS,'polyline');line.setAttribute('points',points.map(p=>p.join(',')).join(' '));line.setAttribute('fill','none');line.setAttribute('stroke','#246c89');line.setAttribute('stroke-width','3');$('chart').append(line);
  for(const [x,y]of points){const circle=document.createElementNS(svgNS,'circle');circle.setAttribute('cx',x);circle.setAttribute('cy',y);circle.setAttribute('r','4');circle.setAttribute('fill','#246c89');$('chart').append(circle);}

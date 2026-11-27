@@ -19,9 +19,14 @@ $('read').onclick = async () => {
     const [result] = await chrome.scripting.executeScript({target:{tabId:tab.id},func:parseVisibleProduct});
     if (!result?.result) throw new Error('未能读取页面，请等待商品详情加载后重试。');
     current = result.result;
-    for (const key of ['title','price','condition']) $(key).value = current[key];
+    if(['removed','sold'].includes(current.status)){
+      const response=await chrome.runtime.sendMessage({type:'saveObservation',row:{...current,source:'visible-page-status'}});
+      if(!response.ok)throw Error(response.error);
+      $('message').textContent=(current.status==='sold'?'商品已售出':'商品已下架')+'，已同步到网站。请在商品价格监测中更新同类链接。';return;
+    }
+    for (const key of ['title','price','condition']) $(key).value = current[key]||'';
     $('status').value = 'unknown'; $('form').hidden = false;
-    $('message').textContent = current.price ? '已读取候选信息，请核对后保存。' : `未定位唯一售价，请查看页面填写。${current.priceCandidates.length ? ' 候选：'+current.priceCandidates.join('、') : ''}`;
+    $('message').textContent = current.price ? '已读取候选信息，请核对后保存。' : `未定位唯一售价，请查看页面填写。${current.priceCandidates?.length ? ' 候选：'+current.priceCandidates.join('、') : ''}`;
     await history();
   } catch(error) { $('message').textContent = error.message; }
 };

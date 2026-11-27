@@ -96,7 +96,16 @@ chrome.runtime.onMessage.addListener((message,sender,respond) => {
       await chrome.storage.local.set({entries:rows});return {};
     }
     if(message.type==='runNow') {return await run(true);}
-    if(message.type==='saveObservation') {await saveObservation(message.row); return {};}
+    if(message.type==='saveObservation') {
+      const row=message.row;
+      if(['removed','sold'].includes(row.status)){
+        const {watchItems=[]}=await chrome.storage.local.get('watchItems');
+        const item=watchItems.find(x=>x.itemId===row.itemId);
+        if(item){item.availability=row.status;item.lastResult={ok:true,status:row.status,title:row.title,attemptedAt:new Date().toISOString()};await chrome.storage.local.set({watchItems});}
+        return {};
+      }
+      await saveObservation(row); return {};
+    }
     if(message.type==='saveSettings') {
       if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(message.settings.time)) throw new Error('时间无效');
       await chrome.storage.local.set({settings:message.settings}); return {};
