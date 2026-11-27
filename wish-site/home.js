@@ -36,12 +36,14 @@ function prices(saved){
  const id=state.wish.itemId,rows=state.observations.filter(r=>r.itemId===id&&Number.isFinite(r.price)&&r.price>0).sort((a,b)=>a.observedAt.localeCompare(b.observedAt));
  $('chart').replaceChildren();$('product-link').hidden=true;
  if(!rows.length){$('price-summary').textContent='尚无该商品的价格记录。添加商品并完成一次检查后即可查看。';$('advice').textContent='';return;}
+ const unavailable=state.watchItems.find(x=>x.itemId===id);
  const latest=rows.at(-1),values=rows.map(r=>r.price),low=Math.min(...values),high=Math.max(...values);
  $('price-summary').textContent=`最近记录 ¥${latest.price} · ${new Date(latest.observedAt).toLocaleString()} · 共 ${rows.length} 次记录 · ${latest.confirmed===false?'自动读取待核对':'人工确认'}`;
  const svgNS='http://www.w3.org/2000/svg';const points=values.map((v,i)=>[30+(values.length===1?.5:i/(values.length-1))*660,165-(v-low)/(high-low||1)*130]);
  const line=document.createElementNS(svgNS,'polyline');line.setAttribute('points',points.map(p=>p.join(',')).join(' '));line.setAttribute('fill','none');line.setAttribute('stroke','#246c89');line.setAttribute('stroke-width','3');$('chart').append(line);
  for(const [x,y]of points){const circle=document.createElementNS(svgNS,'circle');circle.setAttribute('cx',x);circle.setAttribute('cy',y);circle.setAttribute('r','4');circle.setAttribute('fill','#246c89');$('chart').append(circle);}
  $('chart').setAttribute('aria-label',`挂牌价历史，最低 ${low} 元，最高 ${high} 元，共 ${rows.length} 次记录`);
+ if(['removed','sold'].includes(unavailable?.availability)){$('advice').textContent=`该商品${unavailable.availability==='sold'?'已售出':'已下架'}，历史价格仅供回顾。请前往商品价格监测更新同类链接，攒钱记录会保留。`;$('product-link').hidden=true;return;}
  const stale=Date.now()-new Date(latest.observedAt).getTime()>86400000;
  $('advice').textContent=stale?'价格记录已超过一天，请先更新价格。':cents(latest.price)>saved?`距这次记录的挂牌价还差 ${money(cents(latest.price)-saved)}，运费和配件费另计。`:rows.length<3?'现有金额已覆盖挂牌价。价格记录不足，暂不判断购买时机，请确认运费、成色与配件。':`现有金额已覆盖挂牌价；${latest.price===low?'当前为这件商品已记录的最低挂牌价':'当前高于这件商品已记录的最低挂牌价 ¥'+low}。这不代表同型号市场最低价，购买前请重新核实。`;
  $('product-link').href=`https://www.goofish.com/item?id=${encodeURIComponent(id)}`;$('product-link').hidden=false;

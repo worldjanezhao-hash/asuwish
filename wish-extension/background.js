@@ -20,8 +20,14 @@ async function check(item) {
       try {
         const [injection] = await chrome.scripting.executeScript({target:{tabId:tab.id},func:parseVisibleProduct});
         result = injection?.result;
-        if (result?.scopeFound && result.title && Number(result.price)>0) break;
+        if (['removed','sold'].includes(result?.status) || (result?.scopeFound && result.title && Number(result.price)>0)) break;
       } catch (error) { injectionError=error.message; }
+    }
+    if(['removed','sold'].includes(result?.status)){
+      if(item.availability!==result.status){
+        await chrome.notifications.create({type:'basic',iconUrl:'icon.png',title:result.status==='sold'?'心愿商品已售出':'心愿商品已下架',message:'请打开网站更新同类商品链接，原有攒钱和价格历史会保留。'}).catch(()=>{});
+      }
+      return {attemptedAt,ok:true,status:result.status,title:result.title,diagnostics:result.diagnostics};
     }
     if (!result?.scopeFound || !result.title || !(Number(result.price)>0)) throw new Error(result?.diagnostics?.reason || injectionError || '页面尚未加载出可读取的商品信息');
     const {observations=[]} = await chrome.storage.local.get('observations');
@@ -51,6 +57,7 @@ async function run(manual=false) {
     item.lastAttemptDay=today; item.lastResult={ok:false,error:'检查中或上次检查被浏览器中断',attemptedAt:new Date().toISOString()};
     await chrome.storage.local.set({watchItems});
     item.lastResult=await check(item);
+    if(item.lastResult.ok)item.availability=item.lastResult.status||'available';
     if(item.lastResult.ok)success++;else failed++;
     await chrome.storage.local.set({watchItems});
   }
@@ -99,6 +106,7 @@ chrome.runtime.onMessage.addListener((message,sender,respond) => {
       const url=new URL(message.url);
       if(!['www.goofish.com','goofish.com'].includes(url.hostname)||url.protocol!=='https:'||url.pathname!=='/item'||!/^\d+$/.test(url.searchParams.get('id')||'')) throw new Error('请粘贴完整的闲鱼商品详情链接');
       const itemId=url.searchParams.get('id'), targetPrice=Number(message.targetPrice);
+      if(message.replaceItemId===itemId)throw new Error('请提供另一件同类商品的链接');
       if(!Number.isFinite(targetPrice)||targetPrice<0) throw new Error('目标价无效');
       const item=watchItems.find(row=>row.itemId===itemId);
       if(item) {item.targetPrice=targetPrice;item.enabled=true;}
@@ -106,6 +114,12 @@ chrome.runtime.onMessage.addListener((message,sender,respond) => {
     } else if(message.type==='removeItem') {
       await chrome.storage.local.set({watchItems:watchItems.filter(row=>row.itemId!==message.itemId)}); return {};
     } else throw new Error('未知操作');
+    if(message.type==='addItem'&&message.replaceItemId){
+      const old=watchItems.find(x=>x.itemId===message.replaceItemId);if(old)old.enabled=false;
+      const {wish,wishes=[]}=await chrome.storage.local.get(['wish','wishes']);
+      const newId=new URL(message.url).searchParams.get('id');
+      await chrome.storage.local.set({...(wish?.itemId===message.replaceItemId?{wish:{...wish,itemId:newId}}:{}),wishes:wishes.map(w=>w.itemId===message.replaceItemId?{...w,itemId:newId}:w)});
+    }
     await chrome.storage.local.set({watchItems}); return {};
   }).then(result=>respond({ok:true,...result}),error=>respond({ok:false,error:error.message}));
   return true;

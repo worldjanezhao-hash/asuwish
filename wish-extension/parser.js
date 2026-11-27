@@ -8,6 +8,9 @@ function parseVisibleProduct() {
   // Anchor extraction to the detail panel containing the purchase action.
   const nodes = [...document.querySelectorAll('body *')].filter(el => visible(el) && !['SCRIPT','STYLE'].includes(el.tagName));
   const buy = nodes.find(el => /^(立即购买|立即购买宝贝)$/.test(el.innerText?.trim()) && ![...el.children].some(child => /^(立即购买|立即购买宝贝)$/.test(child.innerText?.trim())));
+  const unavailable = nodes.find(el => /^(已下架|宝贝已下架|商品已下架|已售出|宝贝已售出|商品已售出)$/.test(el.innerText?.trim()) && ![...el.children].some(child => /^(已下架|宝贝已下架|商品已下架|已售出|宝贝已售出|商品已售出)$/.test(child.innerText?.trim())) && (()=>{for(let p=el.parentElement;p&&p!==document.body;p=p.parentElement){if(p.innerText.length>15000)return false;if(/[¥￥]/.test(p.innerText))return true;}return false;})());
+  const status=!buy&&unavailable?(/售出/.test(unavailable.innerText)?'sold':'removed'):'unknown';
+  if(status!=='unknown')return {itemId:url.searchParams.get('id'),status,title:document.title.replace(/\s*[-_|]\s*闲鱼.*$/,''),observedAt:new Date().toISOString(),diagnostics:{reason:unavailable.innerText.trim()}};
   let scope = null;
   for (let el = buy?.parentElement; el && el !== document.body; el = el.parentElement) {
     const t = el.innerText;
