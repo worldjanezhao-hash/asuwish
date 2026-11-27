@@ -1,4 +1,4 @@
-importScripts('parser.js');
+importScripts('parser.js','wishes.js');
 let queue = Promise.resolve();
 const serial = job => { const result = queue.then(job); queue = result.catch(() => {}); return result; };
 const day = date => `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`;
@@ -69,7 +69,12 @@ chrome.runtime.onMessage.addListener((message,sender,respond) => {
     const bridgeSender=sender.url?.startsWith('http://localhost:8765/') || sender.url?.startsWith('https://worldjanezhao-hash.github.io/asuwish/');
     if(sender.tab && !bridgeSender) throw new Error('不受支持的网站来源');
     if(message.type==='readState') {
-      return {data:await chrome.storage.local.get(['wish','entries','watchItems','observations','settings'])};
+      return {data:await chrome.storage.local.get(['wish','entries','wishes','watchItems','observations','settings'])};
+    }
+    if(['createWish','switchWish','editWish','completeWish','reopenWish'].includes(message.type)) {
+      const data=await chrome.storage.local.get(['wish','entries','wishes']);
+      const result=updateWishes(data,{...message,id:message.type==='createWish'?crypto.randomUUID():message.id});
+      await chrome.storage.local.set(result);return {};
     }
     if(message.type==='writeWish') {
       const w=message.wish;
@@ -78,6 +83,7 @@ chrome.runtime.onMessage.addListener((message,sender,respond) => {
     }
     if(message.type==='writeEntries') {
       const rows=message.entries;
+      const current=await chrome.storage.local.get('wish');if(current.wish?.completedAt)throw Error('已完成的心愿不能继续记账，请先恢复');
       const {wish}=await chrome.storage.local.get('wish');
       if(!wish || !Array.isArray(rows) || rows.some(r=>!Number.isSafeInteger(r.amount)||!r.amount||typeof r.note!=='string'||r.note.length>150||!Number.isFinite(Date.parse(r.at))) || rows.reduce((sum,r)=>sum+r.amount,wish.initial)<0) throw new Error('储蓄记录无效');
       await chrome.storage.local.set({entries:rows});return {};

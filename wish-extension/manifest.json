@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "心愿价格记录",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "定时检查指定商品，记录价格变化并提醒。",
   "permissions": [
     "activeTab",

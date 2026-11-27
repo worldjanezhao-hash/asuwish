@@ -1,5 +1,5 @@
 // Only configured website paths can use this bridge.
-const allowed=new Set(['readState','writeWish','writeEntries','runNow','addItem','removeItem','saveSettings']);
+const allowed=new Set(['createWish','switchWish','editWish','completeWish','reopenWish','readState','writeWish','writeEntries','runNow','addItem','removeItem','saveSettings']);
 window.addEventListener('message',async event=>{
   const m=event.data;
   if(event.source!==window||event.origin!==location.origin||m?.channel!=='wish-request'||!allowed.has(m.type))return;
